@@ -201,7 +201,8 @@ int adjustValue(const SensorSet::key_type& sensor, int value)
 auto addValue(const SensorSet::key_type& sensor,
               const std::string& devPath,
               sysfs::hwmonio::HwmonIO& ioAccess,
-              ObjectInfo& info)
+              ObjectInfo& info,
+              bool isOCC = false)
 {
     static constexpr bool deferSignals = true;
 
@@ -220,7 +221,8 @@ auto addValue(const SensorSet::key_type& sensor,
                 sensor.second,
                 hwmon::entry::cinput,
                 sysfs::hwmonio::retries,
-                sysfs::hwmonio::delay);
+                sysfs::hwmonio::delay,
+                isOCC);
     }
     catch (const std::system_error& e)
     {
@@ -323,6 +325,11 @@ MainLoop::MainLoop(
       state(),
       ioAccess(path)
 {
+    if (path.find("occ") != std::string::npos)
+    {
+        _isOCC = true;
+    }
+
     std::string p = path;
     while (!p.empty() && p.back() == '/')
     {
@@ -399,7 +406,8 @@ void MainLoop::run()
         objectPath.append(label);
 
         ObjectInfo info(&_bus, std::move(objectPath), Object());
-        auto valueInterface = addValue(i.first, _devPath, ioAccess, info);
+        auto valueInterface = addValue(i.first, _devPath, ioAccess, info,
+                _isOCC);
         if (!valueInterface)
         {
 #ifdef REMOVE_ON_FAIL
@@ -480,7 +488,8 @@ void MainLoop::run()
                             i.first.second,
                             hwmon::entry::cinput,
                             sysfs::hwmonio::retries,
-                            sysfs::hwmonio::delay);
+                            sysfs::hwmonio::delay,
+                            _isOCC);
 
                     value = adjustValue(i.first, value);
 

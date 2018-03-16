@@ -130,7 +130,8 @@ class HwmonIO
                 const std::string& id,
                 const std::string& sensor,
                 size_t retries,
-                std::chrono::milliseconds delay) const;
+                std::chrono::milliseconds delay,
+                bool isOCC = false) const;
 
         /** @brief Perform formatted hwmon sysfs write.
          *
