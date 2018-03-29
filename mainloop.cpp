@@ -115,6 +115,16 @@ static constexpr auto typeAttrMap =
         ValueInterface::Unit::RPMS,
         0,
         "pwm"),
+    std::make_tuple(
+        hwmon::type::cmicron_temp,
+        ValueInterface::Unit::DegreesC,
+        -3,
+        "temperature"),
+    std::make_tuple(
+        hwmon::type::cpm963_temp,
+        ValueInterface::Unit::DegreesC,
+        -3,
+        "temperature"),
 };
 
 auto getHwmonType(decltype(typeAttrMap)::const_reference attrs)

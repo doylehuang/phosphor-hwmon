@@ -26,6 +26,9 @@ static constexpr auto ccurr = "curr";
 static constexpr auto cenergy = "energy";
 static constexpr auto cpower = "power";
 static constexpr auto cpwm = "pwm";
+static constexpr auto cmicron_temp = "micron_temp";
+static constexpr auto cpm963_temp = "pm963_temp";
+
 
 
 static const std::string fan = cfan;
