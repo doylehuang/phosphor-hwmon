@@ -29,7 +29,6 @@
 #include "thresholds.hpp"
 #include "targets.hpp"
 #include "fan_speed.hpp"
-
 #include <xyz/openbmc_project/Sensor/Device/error.hpp>
 
 using namespace phosphor::logging;
@@ -283,7 +282,8 @@ void add_event_log(sdbusplus::bus::bus& bus,
             const std::string event_log,
             const std::string sensor,
             const std::string event_key,
-            const std::string assert_msg)
+            const std::string assert_msg,
+            std::uint32_t error_level)
 {
     //check if even trigger assert or deassert event
     std::string record_item_key = event_key + sensor;
@@ -301,9 +301,10 @@ void add_event_log(sdbusplus::bus::bus& bus,
     auto method =  bus.new_method_call("xyz.openbmc_project.Logging",
                                        "/xyz/openbmc_project/logging/internal/manager",
                                        "xyz.openbmc_project.Logging.Internal.Manager",
-                                       "Commit");
+                                       "CommitWithLvl");
     method.append(std::uint64_t(0));
     method.append(event_log);
+    method.append(error_level);
     bus.call_noreply(method);
     return;
 }
@@ -494,14 +495,15 @@ void MainLoop::run()
                     value = adjustValue(i.first, value);
 
                     auto& objInfo = std::get<ObjectInfo>(i.second);
+					std::string sensor_name = std::get<std::string>(i.second);
                     auto& obj = std::get<Object>(objInfo);
                     auto result_check_threshold = 0;
-
                     for (auto& iface : obj)
                     {
                         auto valueIface = std::shared_ptr<ValueObject>();
                         auto warnIface = std::shared_ptr<WarningObject>();
                         auto critIface = std::shared_ptr<CriticalObject>();
+                        std::string error_log;
 
                         switch (iface.first)
                         {
@@ -516,13 +518,21 @@ void MainLoop::run()
                                 switch (result_check_threshold)
                                 {
                                     case 2: // (value>WarningHigh)
-                                        add_event_log(_bus, "xyz.openbmc_project.Sensor.Threshold.Error.WarningHigh", "ThresholdWarning", (i.first.first+i.first.second), "Assert");
+                                        error_log.assign("Sensor Threshold WarningHigh:");
+                                        error_log.append(sensor_name);
+                                        error_log.append(", value:");
+                                        error_log.append(std::to_string(value));
+                                        add_event_log(_bus, error_log, "ThresholdWarning", (i.first.first+i.first.second), "Assert", LOG_LEVEL_WARNING);
                                         break;
                                     case 1: // (value<WarningLow)
-                                        add_event_log(_bus, "xyz.openbmc_project.Sensor.Threshold.Error.WarningLow", "ThresholdWarning", (i.first.first+i.first.second), "Assert");
+                                        error_log.assign("Sensor Threshold WarningLow:");
+                                        error_log.append(sensor_name);
+                                        error_log.append(", value:");
+                                        error_log.append(std::to_string(value));
+                                        add_event_log(_bus, error_log, "ThresholdWarning", (i.first.first+i.first.second), "Assert", LOG_LEVEL_WARNING);
                                         break;
                                     default:
-                                        add_event_log(_bus, "", "ThresholdWarning", (i.first.first+i.first.second), "Deassert");
+                                        add_event_log(_bus, "", "ThresholdWarning", (i.first.first+i.first.second), "Deassert", LOG_LEVEL_WARNING);
                                         break;
                                 }
                                 break;
@@ -532,13 +542,21 @@ void MainLoop::run()
                                 switch (result_check_threshold)
                                 {
                                     case 2: // (value>CRITHigh)
-                                        add_event_log(_bus, "xyz.openbmc_project.Sensor.Threshold.Error.CriticalHigh", "ThresholdCritical", (i.first.first+i.first.second), "Assert");
+                                        error_log.assign("Sensor Threshold CriticalHigh:");
+                                        error_log.append(sensor_name);
+                                        error_log.append(", value:");
+                                        error_log.append(std::to_string(value));
+                                        add_event_log(_bus, error_log, "ThresholdCritical", (i.first.first+i.first.second), "Assert", LOG_LEVEL_CRITICAL);
                                         break;
                                     case 1: // (value<CRITLow)
-                                        add_event_log(_bus, "xyz.openbmc_project.Sensor.Threshold.Error.CriticalLow", "ThresholdCritical", (i.first.first+i.first.second), "Assert");
+                                        error_log.assign("Sensor Threshold CriticalLow:");
+                                        error_log.append(sensor_name);
+                                        error_log.append(", value:");
+                                        error_log.append(std::to_string(value));
+                                        add_event_log(_bus, error_log, "ThresholdCritical", (i.first.first+i.first.second), "Assert", LOG_LEVEL_CRITICAL);
                                         break;
                                     default:
-                                        add_event_log(_bus, "", "ThresholdCritical", (i.first.first+i.first.second), "Deassert");
+                                        add_event_log(_bus, "", "ThresholdCritical", (i.first.first+i.first.second), "Deassert", LOG_LEVEL_CRITICAL);
                                         break;
                                 }
                                 break;
