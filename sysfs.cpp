@@ -293,7 +293,7 @@ uint32_t HwmonIO::read(
         std::chrono::milliseconds delay,
         bool isOCC) const
 {
-    uint32_t val;
+    uint32_t val = 0;
     std::ifstream ifs;
     auto fullPath = sysfs::make_sysfs_path(
             p, type, id, sensor);
@@ -307,11 +307,11 @@ uint32_t HwmonIO::read(
     {
         try
         {
-            if (!ifs.is_open())
-                ifs.open(fullPath);
+            ifs.open(fullPath);
             ifs.clear();
             ifs.seekg(0);
             ifs >> val;
+            ifs.close();
         }
         catch (const std::exception& e)
         {

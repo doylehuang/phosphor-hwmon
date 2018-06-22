@@ -71,8 +71,15 @@ struct valueAdjust
     double coefficient = 1.0;
 };
 
+struct valueRecord
+{
+	int record_value = 0;
+};
+
+
 // Store the valueAdjust for sensors
 std::map<SensorSet::key_type, valueAdjust> sensorAdjusts;
+std::map<SensorSet::key_type, valueRecord> sensorRecord;
 
 static constexpr auto typeAttrMap =
 {
@@ -176,6 +183,17 @@ int adjustValue(const SensorSet::key_type& sensor, int value)
 // Because read doesn't have an out pointer to store errors.
 // let's assume negative values are errors if they have this
 // set.
+	const auto& it_record = sensorRecord.find(sensor);
+	if (it_record != sensorRecord.end())
+	{
+		if (value < 0)
+		{
+			value = it_record->second.record_value;
+		}
+		it_record->second.record_value = value;
+	}
+
+
 #ifdef NEGATIVE_ERRNO_ON_FAIL
     if (value < 0)
     {
@@ -261,6 +279,8 @@ auto addValue(const SensorSet::key_type& sensor,
     {
         sensorAdjusts[sensor].coefficient = std::stod(coefficient);
     }
+
+	sensorRecord[sensor].record_value  = 0;
 
     val = adjustValue(sensor, val);
 
